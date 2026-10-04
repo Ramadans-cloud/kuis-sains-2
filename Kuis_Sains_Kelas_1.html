@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kuis Sains Kelas 1</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f2f5f9;margin:0;color:#172033}
+.card{max-width:700px;margin:40px auto;background:#fff;padding:28px;border-radius:18px;box-shadow:0 8px 25px #0001}
+h1{margin-top:0}input{width:100%;padding:13px;border:1px solid #ccd3df;border-radius:10px;font-size:16px;box-sizing:border-box}
+button{font-size:16px;padding:13px 18px;border:0;border-radius:10px;cursor:pointer}
+.primary{background:#2563eb;color:white}.choice{display:block;width:100%;text-align:left;margin:10px 0;background:#f8fafc;border:2px solid #e2e8f0}.choice.selected{border-color:#2563eb;background:#eff6ff}
+.progress{height:8px;background:#e5e7eb;border-radius:10px;overflow:hidden;margin:15px 0 25px}.bar{height:100%;background:#2563eb;width:0}
+.top{display:flex;justify-content:space-between}.muted{color:#667085}.hidden{display:none}.center{text-align:center}.score{font-size:54px;font-weight:bold;margin:20px}.error{color:#d92d20}
+</style>
+</head>
+<body>
+<div class="card" id="start">
+<h1>🔬 Kuis Sains Kelas 1</h1>
+<p class="muted">20 soal • 5 poin per soal • Nilai maksimal 100</p>
+<p><b>Nama peserta</b></p>
+<input id="name" placeholder="Masukkan nama kamu">
+<p id="error" class="error"></p>
+<button class="primary" onclick="startQuiz()">Mulai Kuis</button>
+</div>
+
+<div class="card hidden" id="quiz">
+<div class="top"><b id="num"></b><span id="pts" class="muted"></span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<h2 id="q"></h2>
+<div id="choices"></div>
+<button class="primary" id="next" disabled onclick="nextQuestion()">Lanjut</button>
+</div>
+
+<div class="card center hidden" id="result">
+<h1>🎉 Kuis Selesai!</h1>
+<p id="resultName"></p>
+<div class="score" id="score"></div>
+<p id="detail" class="muted"></p>
+<button class="primary" onclick="restart()">Ulangi Kuis</button>
+</div>
+
+<script>
+const data=[
+["Bagian tubuh yang digunakan untuk melihat adalah ...",["Telinga","Mata","Hidung","Tangan","Kaki"],"Mata"],
+["Kita menggunakan telinga untuk ...",["Melihat","Berjalan","Mendengar","Mencium","Memegang"],"Mendengar"],
+["Hidung berguna untuk ...",["Mendengar suara","Melihat benda","Mencium bau","Berjalan","Menulis"],"Mencium bau"],
+["Bagian tubuh yang digunakan untuk berjalan adalah ...",["Mata","Telinga","Hidung","Kaki","Mulut"],"Kaki"],
+["Berikut yang termasuk makhluk hidup adalah ...",["Batu","Meja","Kucing","Kursi","Pensil"],"Kucing"],
+["Berikut yang termasuk benda tak hidup adalah ...",["Ayam","Pohon","Ikan","Sepeda","Kucing"],"Sepeda"],
+["Salah satu ciri makhluk hidup adalah ...",["Bernapas","Tidak tumbuh","Tidak membutuhkan air","Tidak membutuhkan makanan","Selalu diam"],"Bernapas"],
+["Manusia membutuhkan ... untuk hidup.",["Batu","Makanan","Pensil","Meja","Sepatu"],"Makanan"],
+["Tumbuhan membutuhkan ... untuk hidup.",["Air","Buku","Tas","Sepeda","Bola"],"Air"],
+["Ikan hidup di ...",["Tanah","Air","Lemari","Meja","Atap"],"Air"],
+["Bagian tumbuhan yang berada di dalam tanah adalah ...",["Daun","Bunga","Buah","Akar","Batang"],"Akar"],
+["Bagian tumbuhan yang biasanya berwarna hijau adalah ...",["Daun","Akar","Biji","Buah","Bunga"],"Daun"],
+["Bagian tumbuhan yang menopang daun adalah ...",["Akar","Batang","Bunga","Buah","Biji"],"Batang"],
+["Saat air turun dari langit, cuacanya disebut ...",["Cerah","Panas","Hujan","Berangin","Dingin"],"Hujan"],
+["Saat matahari bersinar terang dan langit tidak tertutup awan, cuacanya ...",["Hujan","Cerah","Badai","Gelap","Mendung"],"Cerah"],
+["Sumber cahaya alami adalah ...",["Lampu","Lilin","Senter","Matahari","Televisi"],"Matahari"],
+["Contoh sumber bunyi adalah ...",["Matahari","Lampu","Drum","Buku","Meja"],"Drum"],
+["Agar gigi tetap bersih, kita harus ...",["Jarang mandi","Menyikat gigi","Bermain di tempat sampah","Tidak mencuci tangan","Memakai pakaian kotor"],"Menyikat gigi"],
+["Sebelum makan, sebaiknya kita ...",["Mencuci tangan","Bermain tanah","Tidur","Membuang makanan","Berlari"],"Mencuci tangan"],
+["Sampah sebaiknya dibuang ke ...",["Sungai","Jalan","Halaman","Selokan","Tempat sampah"],"Tempat sampah"]
+];
+let i=0,correct=0,selected=null,name="";
+const $=x=>document.getElementById(x);
+function startQuiz(){
+ name=$("name").value.trim();
+ if(!name){$("error").textContent="Isi nama dulu ya!";return}
+ $("error").textContent="";i=0;correct=0;
+ $("start").classList.add("hidden");$("result").classList.add("hidden");$("quiz").classList.remove("hidden");
+render();
+}
+function render(){
+ selected=null;$("next").disabled=true;
+ let x=data[i];
+ $("num").textContent=`Soal ${i+1} dari ${data.length}`;
+ $("pts").textContent=`${correct*5} poin`;
+ $("bar").style.width=((i+1)/data.length*100)+"%";
+ $("q").textContent=x[0];$("choices").innerHTML="";
+ x[1].forEach((c,n)=>{
+  let b=document.createElement("button");b.className="choice";
+  b.textContent=String.fromCharCode(65+n)+". "+c;
+  b.onclick=()=>{selected=c;document.querySelectorAll(".choice").forEach(z=>z.classList.remove("selected"));b.classList.add("selected");$("next").disabled=false};
+  $("choices").appendChild(b);
+ });
+ $("next").textContent=i===data.length-1?"Selesai":"Lanjut";
+}
+function nextQuestion(){
+ if(selected===null)return;
+ if(selected===data[i][2])correct++;
+ if(i<data.length-1){i++;render()}
+ else{
+  $("quiz").classList.add("hidden");$("result").classList.remove("hidden");
+  $("resultName").textContent="Nama: "+name;
+  $("score").textContent=(correct*5)+"/100";
+  $("detail").textContent=`Benar ${correct} soal • Salah ${data.length-correct} soal`;
+ }
+}
+function restart(){
+ $("name").value=name;$("result").classList.add("hidden");$("start").classList.remove("hidden");
+}
+</script>
+</body>
+</html>
